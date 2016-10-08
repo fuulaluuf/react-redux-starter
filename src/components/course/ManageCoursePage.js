@@ -15,6 +15,14 @@ class ManageCoursePage extends React.Component {
 
     this.updateCourseState = this.updateCourseState.bind(this);
     this.saveCourse = this.saveCourse.bind(this);
+    this.componentWillReceiveProps = this.componentWillReceiveProps.bind(this);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if(this.props.course.id != nextProps.course.id) {
+      // Necessary to populate form when existing course is loaded directly
+      this.setState({course: Object.assign({}, nextProps.course)});
+    }
   }
 
   updateCourseState(event) {
@@ -27,6 +35,7 @@ class ManageCoursePage extends React.Component {
   saveCourse(event) {
     event.preventDefault();
     this.props.actions.saveCourse(this.state.course);
+    this.context.router.push('/courses');
   }
 
   render() {
@@ -48,8 +57,24 @@ ManageCoursePage.propTypes = {
   actions: React.PropTypes.object.isRequired
 };
 
+// Pull in the React Router context so router is available on this.context.router
+ManageCoursePage.contextTypes = {
+  router: PropTypes.object
+};
+
+function getCourseById(courses, id) {
+  const course = courses.filter(course => course.id == id);
+  if (course) return course[0]; // since filter returns an array, have to grab the first.
+  return null;
+}
+
 function mapStateToProps(state, ownProps) {
+  const courseId = ownProps.params.id; // from the path `/course/:id`
   let course = {id: '', watchHref: '', title: '', authorId: '', length: '', category: ''};
+
+  if(courseId && state.courses.length > 0) {
+    course = getCourseById(state.courses, courseId);
+  }
 
   const authorsFormattedForDropdown = state.authors.map(author => {
     return {
